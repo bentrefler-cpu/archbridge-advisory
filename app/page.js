@@ -27,6 +27,9 @@ const GLOBAL_CSS = `
     .desktop-nav { display: none !important; }
     .mobile-nav-toggle { display: flex !important; }
   }
+  @media (max-width: 640px) {
+    [data-principal-card] { grid-template-columns: 1fr !important; }
+  }
   @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
 `;
 
@@ -48,7 +51,7 @@ function Nav({ active, scrolled }) {
   const [hoveredNav, setHoveredNav] = useState(null);
 
   return (
-    <nav style={{
+    <nav role="navigation" aria-label="Main navigation" style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000,
       padding: scrolled ? "16px 40px" : "28px 40px",
       display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -57,7 +60,7 @@ function Nav({ active, scrolled }) {
       transition: `padding 0.4s ${EASE}, background 0.4s ${EASE}, border-color 0.4s ${EASE}`,
       borderBottom: scrolled ? "1px solid rgba(184,148,95,0.15)" : "1px solid transparent",
     }}>
-      <div onClick={() => scrollTo("home")} style={{ cursor: "pointer", display: "flex", flexDirection: "column" }}>
+      <div onClick={() => scrollTo("home")} style={{ cursor: "pointer", display: "flex", flexDirection: "column" }} aria-label="Archbridge Advisory - return to top">
         <span style={{ fontFamily: font.serif, fontSize: "22px", fontWeight: 600, color: IVORY, letterSpacing: "3px", textTransform: "uppercase" }}>Archbridge</span>
         <span style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 400, color: GOLD, letterSpacing: "5px", textTransform: "uppercase", marginTop: "-2px" }}>Advisory</span>
       </div>
@@ -69,6 +72,8 @@ function Nav({ active, scrolled }) {
           return (
             <span key={item} onClick={() => scrollTo(item.toLowerCase())}
               onMouseEnter={() => setHoveredNav(i)} onMouseLeave={() => setHoveredNav(null)}
+              role="button" tabIndex={0} aria-label={`Navigate to ${item}`}
+              onKeyDown={(e) => { if (e.key === "Enter") scrollTo(item.toLowerCase()); }}
               style={{
                 fontFamily: font.sans, fontSize: "11px", fontWeight: 400,
                 color: isActive || isHovered ? GOLD : "rgba(245,240,232,0.65)",
@@ -83,6 +88,8 @@ function Nav({ active, scrolled }) {
       </div>
 
       <div className="mobile-nav-toggle" onClick={() => setMenuOpen(!menuOpen)}
+        role="button" tabIndex={0} aria-label="Toggle menu" aria-expanded={menuOpen}
+        onKeyDown={(e) => { if (e.key === "Enter") setMenuOpen(!menuOpen); }}
         style={{ display: "none", cursor: "pointer", flexDirection: "column", gap: "5px" }}>
         <span style={{ width: "24px", height: "1.5px", background: IVORY, transition: `transform 0.3s ${EASE}`, transform: menuOpen ? "rotate(45deg) translate(4px, 4px)" : "none" }} />
         <span style={{ width: "24px", height: "1.5px", background: IVORY, transition: `opacity 0.3s ${EASE}`, opacity: menuOpen ? 0 : 1 }} />
@@ -91,9 +98,13 @@ function Nav({ active, scrolled }) {
 
       {menuOpen && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(10,22,40,0.98)", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: "32px", zIndex: 999 }}>
-          <div onClick={() => setMenuOpen(false)} style={{ position: "absolute", top: "28px", right: "40px", cursor: "pointer", color: IVORY, fontSize: "28px", fontWeight: 300 }}>×</div>
+          <div onClick={() => setMenuOpen(false)} role="button" tabIndex={0} aria-label="Close menu"
+            onKeyDown={(e) => { if (e.key === "Enter") setMenuOpen(false); }}
+            style={{ position: "absolute", top: "28px", right: "40px", cursor: "pointer", color: IVORY, fontSize: "28px", fontWeight: 300 }}>×</div>
           {NAV_ITEMS.map((item) => (
             <span key={item} onClick={() => { scrollTo(item.toLowerCase()); setMenuOpen(false); }}
+              role="button" tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") { scrollTo(item.toLowerCase()); setMenuOpen(false); } }}
               style={{ fontFamily: font.serif, fontSize: "28px", fontWeight: 400, color: IVORY, letterSpacing: "3px", textTransform: "uppercase", cursor: "pointer" }}>
               {item}
             </span>
@@ -162,10 +173,8 @@ function Hero() {
   });
 
   const p = scrollProgress;
-  // Smooth ease-out curve (fast start, gentle finish)
   const eased = 1 - Math.pow(1 - p, 3);
 
-  // Arch: scales up, border peaks mid-scroll then fades
   const outerScale = 1 + eased * 4;
   const outerBorderOpacity = p < 0.5
     ? 0.2 + (p / 0.5) * 0.25
@@ -175,10 +184,7 @@ function Hero() {
     ? 0.08 + (p / 0.4) * 0.15
     : Math.max(0, 0.23 - ((p - 0.4) / 0.6) * 0.23);
 
-  // Simple clean transition: navy holds longer, then fades to ivory
   const ivoryOpacity = Math.max(0, (p - 0.45) / 0.55);
-
-  // Content: scales up, blurs, and fades (approaching viewer)
   const contentOpacity = Math.max(0, 1 - p * 3);
   const contentScale = 1 + p * 0.25;
   const contentBlur = p * 5;
@@ -189,7 +195,6 @@ function Hero() {
       justifyContent: "center", alignItems: "center", textAlign: "center",
       padding: "120px 40px 80px", position: "relative", overflow: "hidden", background: NAVY,
     }}>
-      {/* Subtle ambient glow */}
       <div style={{
         position: "absolute", inset: 0,
         background: `radial-gradient(ellipse at 50% 45%, rgba(184,148,95,0.06) 0%, transparent 45%),
@@ -198,67 +203,49 @@ function Hero() {
         opacity: 1 - eased * 0.9,
       }} />
 
-      {/* Clean ivory wash (single layer, no gold bloom) */}
-      <div style={{
-        position: "absolute", inset: 0, pointerEvents: "none",
-        background: IVORY,
-        opacity: ivoryOpacity,
-      }} />
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: IVORY, opacity: ivoryOpacity }} />
 
-      {/* Outer arch */}
       <div style={{
         position: "absolute", top: "50%", left: "50%",
         width: "min(480px, 68vw)", height: "min(580px, 78vh)",
         border: `1.5px solid rgba(184,148,95,${outerBorderOpacity})`,
-        borderRadius: "240px 240px 0 0",
-        pointerEvents: "none",
+        borderRadius: "240px 240px 0 0", pointerEvents: "none",
         boxShadow: `0 0 ${60 + eased * 100}px rgba(184,148,95,${Math.min(0.06, eased * 0.06)})`,
-        transform: `translate(-50%, -50%) scale(${outerScale})`,
-        transformOrigin: "center 40%",
+        transform: `translate(-50%, -50%) scale(${outerScale})`, transformOrigin: "center 40%",
       }} />
 
-      {/* Inner arch (parallax) */}
       <div style={{
         position: "absolute", top: "50%", left: "50%",
         width: "min(420px, 60vw)", height: "min(520px, 70vh)",
         border: `0.75px solid rgba(184,148,95,${innerBorderOpacity})`,
-        borderRadius: "210px 210px 0 0",
-        pointerEvents: "none",
-        transform: `translate(-50%, -50%) scale(${innerScale})`,
-        transformOrigin: "center 40%",
+        borderRadius: "210px 210px 0 0", pointerEvents: "none",
+        transform: `translate(-50%, -50%) scale(${innerScale})`, transformOrigin: "center 40%",
       }} />
 
-      {/* Content: scales up and fades toward viewer */}
       <div style={{
         position: "relative", zIndex: 1, maxWidth: "700px",
-        opacity: contentOpacity,
-        transform: `scale(${contentScale})`,
-        filter: contentBlur > 0.3 ? `blur(${contentBlur}px)` : "none",
-        transformOrigin: "center center",
+        opacity: contentOpacity, transform: `scale(${contentScale})`,
+        filter: contentBlur > 0.3 ? `blur(${contentBlur}px)` : "none", transformOrigin: "center center",
       }}>
         <div style={stagger(0.2)}>
-          <div style={{
-            fontFamily: font.sans, fontSize: "9px", fontWeight: 500,
-            letterSpacing: "6px", textTransform: "uppercase", color: GOLD, marginBottom: "48px",
-          }}>
+          <div style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 500, letterSpacing: "6px", textTransform: "uppercase", color: GOLD, marginBottom: "48px" }}>
             Sell-Side M&A Advisory
           </div>
         </div>
-        <h1 style={{
-          fontFamily: font.serif, fontSize: "clamp(38px, 6vw, 66px)", fontWeight: 400,
-          color: IVORY, lineHeight: 1.12, margin: "0 0 36px", ...stagger(0.4),
-        }}>
+        <h1 style={{ fontFamily: font.serif, fontSize: "clamp(38px, 6vw, 66px)", fontWeight: 400, color: IVORY, lineHeight: 1.12, margin: "0 0 36px", ...stagger(0.4) }}>
           Institutional Advisory{" "}<span style={{ fontStyle: "italic", color: GOLD }}>for</span><br />Exceptional Businesses
         </h1>
         <p style={{ ...bodyText("rgba(245,240,232,0.6)"), maxWidth: "420px", margin: "0 auto 56px", ...stagger(0.6) }}>
           Sell-side M&A advisory for business owners, operators, and private equity sponsors.
         </p>
         <div style={stagger(0.8)}>
-          <span onClick={() => scrollTo("contact")} style={{
-            fontFamily: font.sans, fontSize: "11px", fontWeight: 500, letterSpacing: "3px", textTransform: "uppercase",
-            color: GOLD, cursor: "pointer", padding: "14px 36px", border: "1px solid rgba(184,148,95,0.4)",
-            transition: `background 0.3s ${EASE}, border-color 0.3s ${EASE}, color 0.3s ${EASE}`, display: "inline-block",
-          }}
+          <span onClick={() => scrollTo("contact")} role="button" tabIndex={0}
+            onKeyDown={(e) => { if (e.key === "Enter") scrollTo("contact"); }}
+            style={{
+              fontFamily: font.sans, fontSize: "11px", fontWeight: 500, letterSpacing: "3px", textTransform: "uppercase",
+              color: GOLD, cursor: "pointer", padding: "14px 36px", border: "1px solid rgba(184,148,95,0.4)",
+              transition: `background 0.3s ${EASE}, border-color 0.3s ${EASE}, color 0.3s ${EASE}`, display: "inline-block",
+            }}
             onMouseEnter={(e) => { e.target.style.background = "rgba(184,148,95,0.15)"; e.target.style.borderColor = GOLD; e.target.style.color = IVORY; }}
             onMouseLeave={(e) => { e.target.style.background = "transparent"; e.target.style.borderColor = "rgba(184,148,95,0.4)"; e.target.style.color = GOLD; }}>
             Begin a Conversation
@@ -266,12 +253,7 @@ function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div style={{
-        position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)",
-        opacity: loaded && contentOpacity > 0.6 ? 0.4 : 0,
-        transition: "opacity 0.4s ease",
-      }}>
+      <div style={{ position: "absolute", bottom: "40px", left: "50%", transform: "translateX(-50%)", opacity: loaded && contentOpacity > 0.6 ? 0.4 : 0, transition: "opacity 0.4s ease" }}>
         <div style={{ width: "1px", height: "40px", background: `linear-gradient(to bottom, ${GOLD}, transparent)`, animation: "pulse 2s ease-in-out infinite" }} />
       </div>
     </section>
@@ -433,7 +415,6 @@ function Team() {
   const principal = {
     name: "Varun Bhambhani", title: "Founder & Managing Principal",
     bio: "Varun leads Archbridge Advisory with over a decade of experience executing and overseeing private equity transactions across the full deal lifecycle. He held senior positions at TorQuest Partners, Brookfield Asset Management, and National Bank Financial, spanning acquisitions, portfolio management, and M&A execution. He began his career at PwC Canada. CPA certified.",
-    initials: "VB",
   };
 
   const advisors = useMemo(() => [
@@ -457,7 +438,6 @@ function Team() {
           maxWidth: "780px", margin: "0 auto 72px", background: NAVY,
           display: "grid", gridTemplateColumns: "240px 1fr", overflow: "hidden",
         }} data-principal-card="">
-          {/* Photo */}
           <div style={{ position: "relative", overflow: "hidden" }}>
             <img src={VARUN_IMG} alt={principal.name} style={{
               width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 15%",
@@ -466,7 +446,6 @@ function Team() {
             }} />
             <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, transparent 70%, rgba(10,22,40,0.15) 100%)" }} />
           </div>
-          {/* Text */}
           <div style={{ padding: "40px 44px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
             <div style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 500, letterSpacing: "3.5px", textTransform: "uppercase", color: GOLD, marginBottom: "12px" }}>
               {principal.title}
@@ -481,36 +460,28 @@ function Team() {
           </div>
         </div>
 
-        {/* Mobile override for stacked layout */}
-        <style>{`
-          @media (max-width: 640px) {
-            [data-principal-card] { grid-template-columns: 1fr !important; }
-          }
-        `}</style>
-
         <div style={{ textAlign: "center", marginBottom: "32px" }}>
           <div style={{ width: "32px", height: "1px", background: "rgba(184,148,95,0.25)", margin: "0 auto 20px" }} />
           <span style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 500, letterSpacing: "4px", textTransform: "uppercase", color: "rgba(10,22,40,0.4)" }}>Sector & Functional Advisors</span>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1px", background: "rgba(184,148,95,0.15)", border: "1px solid rgba(184,148,95,0.15)" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1px", background: "rgba(184,148,95,0.15)", border: "1px solid rgba(184,148,95,0.15)" }}>
           {advisors.map((a, i) => {
             const h = hoveredAdvisor === i;
-            const p = a.placeholder;
             return (
               <div key={i} onMouseEnter={() => setHoveredAdvisor(i)} onMouseLeave={() => setHoveredAdvisor(null)}
                 style={{ background: h ? NAVY : IVORY, padding: "32px 24px", cursor: "default", transition: `background 0.45s ${EASE}` }}>
                 <div style={{
                   width: "48px", height: "48px", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px",
-                  background: h ? "rgba(184,148,95,0.15)" : p ? "rgba(10,22,40,0.04)" : NAVY,
+                  background: h ? "rgba(184,148,95,0.15)" : NAVY,
                   transform: h ? "translateY(-3px)" : "translateY(0)",
                   transition: `background 0.45s ${EASE}, transform 0.45s ${EASE}`,
                 }}>
-                  <span style={{ fontFamily: font.serif, fontSize: "18px", fontWeight: 400, letterSpacing: "2px", color: h ? GOLD : p ? "rgba(10,22,40,0.15)" : "rgba(184,148,95,0.5)", transition: `color 0.45s ${EASE}` }}>{a.initials}</span>
+                  <span style={{ fontFamily: font.serif, fontSize: "18px", fontWeight: 400, letterSpacing: "2px", color: h ? GOLD : "rgba(184,148,95,0.5)", transition: `color 0.45s ${EASE}` }}>{a.initials}</span>
                 </div>
-                <h4 style={{ fontFamily: font.serif, fontSize: "18px", fontWeight: 500, margin: "0 0 2px", fontStyle: p ? "italic" : "normal", color: h ? IVORY : p ? "rgba(10,22,40,0.3)" : NAVY, transition: `color 0.45s ${EASE}` }}>{a.name}</h4>
-                <div style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: GOLD, marginBottom: "12px", opacity: p && !h ? 0.5 : 1, transition: `opacity 0.45s ${EASE}` }}>{a.focus}</div>
-                <p style={{ fontFamily: font.sans, fontSize: "12.5px", fontWeight: 300, lineHeight: 1.75, margin: 0, color: h ? "rgba(245,240,232,0.7)" : p ? "rgba(10,22,40,0.3)" : "rgba(10,22,40,0.6)", transition: `color 0.45s ${EASE}` }}>{a.bio}</p>
+                <h4 style={{ fontFamily: font.serif, fontSize: "18px", fontWeight: 500, margin: "0 0 2px", color: h ? IVORY : NAVY, transition: `color 0.45s ${EASE}` }}>{a.name}</h4>
+                <div style={{ fontFamily: font.sans, fontSize: "9px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: GOLD, marginBottom: "12px" }}>{a.focus}</div>
+                <p style={{ fontFamily: font.sans, fontSize: "12.5px", fontWeight: 300, lineHeight: 1.75, margin: 0, color: h ? "rgba(245,240,232,0.7)" : "rgba(10,22,40,0.6)", transition: `color 0.45s ${EASE}` }}>{a.bio}</p>
               </div>
             );
           })}
@@ -525,19 +496,34 @@ function Contact() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [error, setError] = useState("");
+
+  const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.email || !formData.message) return;
+    setError("");
+    if (!formData.name || !formData.email || !formData.message) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (!isValidEmail(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
     setSending(true);
     try {
-      await fetch("https://formspree.io/f/mwvraboz", {
+      const res = await fetch("https://formspree.io/f/mwvraboz", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
-      setSubmitted(true);
+      if (res.ok) {
+        setSubmitted(true);
+      } else {
+        setError("Something went wrong. Please email us directly.");
+      }
     } catch (e) {
-      setSubmitted(true);
+      setError("Something went wrong. Please email us directly.");
     }
     setSending(false);
   };
@@ -556,8 +542,8 @@ function Contact() {
           <div style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "left" }}>
             {[{ key: "name", label: "Name", type: "text" }, { key: "email", label: "Email", type: "email" }].map((field) => (
               <div key={field.key}>
-                <label style={{ fontFamily: font.sans, fontSize: "10px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(245,240,232,0.4)", display: "block", marginBottom: "8px" }}>{field.label}</label>
-                <input type={field.type} value={formData[field.key]} onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
+                <label htmlFor={field.key} style={{ fontFamily: font.sans, fontSize: "10px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(245,240,232,0.4)", display: "block", marginBottom: "8px" }}>{field.label}</label>
+                <input id={field.key} type={field.type} value={formData[field.key]} onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
                   style={{ width: "100%", padding: "14px 16px", background: "rgba(245,240,232,0.04)", border: "1px solid rgba(184,148,95,0.15)", color: IVORY, fontFamily: font.sans, fontSize: "14px", fontWeight: 300, outline: "none", boxSizing: "border-box", transition: `border-color 0.3s ${EASE}, box-shadow 0.3s ${EASE}` }}
                   onFocus={(e) => { e.target.style.borderColor = GOLD; e.target.style.boxShadow = "0 0 0 1px rgba(184,148,95,0.2)"; }}
                   onBlur={(e) => { e.target.style.borderColor = "rgba(184,148,95,0.15)"; e.target.style.boxShadow = "none"; }}
@@ -565,8 +551,8 @@ function Contact() {
               </div>
             ))}
             <div>
-              <label style={{ fontFamily: font.sans, fontSize: "10px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(245,240,232,0.4)", display: "block", marginBottom: "8px" }}>Message</label>
-              <textarea rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+              <label htmlFor="message" style={{ fontFamily: font.sans, fontSize: "10px", fontWeight: 500, letterSpacing: "2px", textTransform: "uppercase", color: "rgba(245,240,232,0.4)", display: "block", marginBottom: "8px" }}>Message</label>
+              <textarea id="message" rows={5} value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 style={{ width: "100%", padding: "14px 16px", background: "rgba(245,240,232,0.04)", border: "1px solid rgba(184,148,95,0.15)", color: IVORY, fontFamily: font.sans, fontSize: "14px", fontWeight: 300, outline: "none", resize: "vertical", boxSizing: "border-box", transition: `border-color 0.3s ${EASE}, box-shadow 0.3s ${EASE}` }}
                 onFocus={(e) => { e.target.style.borderColor = GOLD; e.target.style.boxShadow = "0 0 0 1px rgba(184,148,95,0.2)"; }}
                 onBlur={(e) => { e.target.style.borderColor = "rgba(184,148,95,0.15)"; e.target.style.boxShadow = "none"; }}
@@ -578,6 +564,9 @@ function Contact() {
               onMouseLeave={(e) => { if (!sending) { e.target.style.background = "transparent"; e.target.style.borderColor = "rgba(184,148,95,0.4)"; e.target.style.color = GOLD; } }}>
               {sending ? "Sending..." : "Send Inquiry"}
             </button>
+            {error && (
+              <div role="alert" style={{ fontFamily: font.sans, fontSize: "12px", fontWeight: 300, color: "#c97a5a", textAlign: "center", alignSelf: "center" }}>{error}</div>
+            )}
           </div>
         ) : (
           <div style={{ padding: "48px", border: "1px solid rgba(184,148,95,0.2)" }}>
